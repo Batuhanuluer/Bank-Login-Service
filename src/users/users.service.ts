@@ -26,7 +26,7 @@ export class UsersService {
   });}
 
   async create(newUser: CreateUserDto) {
-    // Benzersiz alanları kontrol edin (örneğin, e-posta ve telefon)
+
     const existingUser = await this.userModel.findOne({
       $or: [{ email: newUser.email }, { phone: newUser.phone }],
     });
@@ -38,9 +38,7 @@ export class UsersService {
       );
     }
     const hashedPassowrd  = await bcrypt.hash(newUser.password,12)
-    
-    console.log(1);
-    
+        
     const createdUser = new this.userModel({
         email : newUser.email,
         firstname : newUser.firstName,
@@ -48,20 +46,13 @@ export class UsersService {
         lastname : newUser.lastName,
         password : hashedPassowrd
     })
-    console.log(2);
-
-    const test = await createdUser.save()
-    console.log(test);
+    await createdUser.save()
 
     return createdUser
   }
 
-  async login(loginUser : LoginUserdto) {
-    console.log(loginUser);
-    
-    const user = await this.userModel.findOne({phone:loginUser.phone})            
-    console.log(user);
-    
+  async login(loginUser : LoginUserdto) {    
+    const user = await this.userModel.findOne({phone:loginUser.phone})                
 
     if (!user || !(await bcrypt.compare(loginUser.password, user.password))) {
     throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
@@ -77,22 +68,23 @@ export class UsersService {
 
     await this.redisClient.set(user.phone, userJson);
      
-    return token
+    return {userJson , token : token}
   }
 
 
   async logout(userToken: string) {
     try {
-      console.log(userToken);
+      const verifiedToken = this.jwtService.verify(userToken);
+
+      const phone = verifiedToken.phone; 
+    
+      await this.redisClient.del(phone);  
+
+      console.log(`User with phone ${phone} has been logged out and removed from Redis.`);
       
-      const user = await this.redisClient.get(userToken);
-      if (user) {
-        return user;
-      } else {
-        throw new Error('User not found');
-      }
     } catch (error) {
-      console.error('Error retrieving data:', error.message);
-      throw error;  }
+      console.error("Error during logout:", error.message);  
+      throw error; 
+    }
 }
 }
