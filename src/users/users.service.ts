@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { ConflictException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -26,6 +26,17 @@ export class UsersService {
   });}
 
   async create(newUser: CreateUserDto) {
+    // Benzersiz alanları kontrol edin (örneğin, e-posta ve telefon)
+    const existingUser = await this.userModel.findOne({
+      $or: [{ email: newUser.email }, { phone: newUser.phone }],
+    });
+
+    if (existingUser) {
+      // Aynı e-posta veya telefon numarası mevcutsa hata döndür
+      throw new ConflictException(
+        'A user with the same email or phone number already exists.',
+      );
+    }
     const hashedPassowrd  = await bcrypt.hash(newUser.password,12)
     
     console.log(1);
