@@ -81,7 +81,9 @@ export class UsersService {
       await this.redisClient.del(phone);  
 
       console.log(`User with phone ${phone} has been logged out and removed from Redis.`);
-      
+
+
+      //Test for the new origin 
     } catch (error) {
       console.error("Error during logout:", error.message);  
       throw error; 
